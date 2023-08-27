@@ -1,5 +1,6 @@
 import random
 import pygame
+from collections import OrderedDict
 from sys import exit
 
 class Card:
@@ -168,19 +169,19 @@ class Game:
 
     def init_piles(self):
         self.piles = {}
-        self.piles["board"] = {}
+        self.piles["board"] = OrderedDict()
         self.piles["board"]["red"] = CardPile("red", "board")
         self.piles["board"]["green"] = CardPile("green", "board")
         self.piles["board"]["blue"] = CardPile("blue", "board")
         self.piles["board"]["white"] = CardPile("white", "board")
         self.piles["board"]["yellow"] = CardPile("yellow", "board")
-        self.piles["p1"] = {}
+        self.piles["p1"] = OrderedDict()
         self.piles["p1"]["red"] = CardPile("red", "p1")
         self.piles["p1"]["green"] = CardPile("green", "p1")
         self.piles["p1"]["blue"] = CardPile("blue", "p1")
         self.piles["p1"]["white"] = CardPile("white", "p1")
         self.piles["p1"]["yellow"] = CardPile("yellow", "p1")
-        self.piles["p2"] = {}
+        self.piles["p2"] = OrderedDict()
         self.piles["p2"]["red"] = CardPile("red", "p2")
         self.piles["p2"]["green"] = CardPile("green", "p2")
         self.piles["p2"]["blue"] = CardPile("blue", "p2")
@@ -221,26 +222,11 @@ class Game:
                     len(self.piles[p]["white"].pile),\
                     len(self.piles[p]["yellow"].pile)])
         for i in range(longest):
-            if i < len(self.piles[p]["red"].pile):
-                p_piles[0].append(str(self.piles[p]["red"].pile[i].value))
-            else:
-                p_piles[0].append(" ")
-            if i < len(self.piles[p]["green"].pile):
-                p_piles[1].append(str(self.piles[p]["green"].pile[i].value))
-            else:
-                p_piles[1].append(" ")
-            if i < len(self.piles[p]["blue"].pile):
-                p_piles[2].append(str(self.piles[p]["blue"].pile[i].value))
-            else:
-                p_piles[2].append(" ")
-            if i < len(self.piles[p]["white"].pile):
-                p_piles[3].append(str(self.piles[p]["white"].pile[i].value))
-            else:
-                p_piles[3].append(" ")
-            if i < len(self.piles[p]["yellow"].pile):
-                p_piles[4].append(str(self.piles[p]["yellow"].pile[i].value))
-            else:
-                p_piles[4].append(" ")
+            for j in range(len(self.piles[p])):
+                if i < len(list(self.piles[p].values())[j].pile):
+                    p_piles[j].append(str(list(self.piles[p].values())[j].pile[i].value))
+                else:
+                    p_piles[j].append(" ")
         return p_piles
 
     def print_game(self):
@@ -249,6 +235,8 @@ class Game:
         YELLOW = "\033[33m"
         BLUE = "\033[34m"
         WHITE = "\033[37m"
+        COLORS = OrderedDict([("red", RED), ("green", GREEN), ("blue", BLUE), \
+                              ("white", WHITE), ("yellow", YELLOW)])
 
         p2_hand_values = []
         p2_hand_colors = []
@@ -260,28 +248,10 @@ class Game:
 
         for i in range(len(self.p1.hand)):
             p2_hand_values.append(str(self.p2.hand[i].value))
-            if self.p2.hand[i].color == "red":
-                p2_hand_colors.append(RED)
-            elif self.p2.hand[i].color == "green":
-                p2_hand_colors.append(GREEN)
-            elif self.p2.hand[i].color == "blue":
-                p2_hand_colors.append(BLUE)
-            elif self.p2.hand[i].color == "white":
-                p2_hand_colors.append(WHITE)
-            elif self.p2.hand[i].color == "yellow":
-                p2_hand_colors.append(YELLOW)
+            p2_hand_colors.append(COLORS[self.p2.hand[i].color])
             p1_hand_values.append(str(self.p1.hand[i].value))
-            if self.p1.hand[i].color == "red":
-                p1_hand_colors.append(RED)
-            elif self.p1.hand[i].color == "green":
-                p1_hand_colors.append(GREEN)
-            elif self.p1.hand[i].color == "blue":
-                p1_hand_colors.append(BLUE)
-            elif self.p1.hand[i].color == "white":
-                p1_hand_colors.append(WHITE)
-            elif self.p1.hand[i].color == "yellow":
-                p1_hand_colors.append(YELLOW)
-        
+            p1_hand_colors.append(COLORS[self.p1.hand[i].color])
+
         for pile in self.piles["board"]:
             if self.piles["board"][pile].is_empty():
                 board.append("x")
@@ -355,93 +325,53 @@ YELLOW_CARD_SURF = [pygame.image.load("images/yellow1.png"), pygame.image.load("
                     pygame.image.load("images/yellow5.png"), pygame.image.load("images/yellow6.png"), \
                     pygame.image.load("images/yellow7.png"), pygame.image.load("images/yellow8.png"), \
                     pygame.image.load("images/yellow9.png"), pygame.image.load("images/yellow10.png")]
-CARD_SURF = {"red": RED_CARD_SURF, "green": GREEN_CARD_SURF, "blue": BLUE_CARD_SURF, \
-             "white": WHITE_CARD_SURF, "yellow": YELLOW_CARD_SURF}
-PLAYER1_HAND_RECT = [CARDBACK_SURF.get_rect(center = (screen.get_width()*(1/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(3/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(5/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(7/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(9/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(11/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(13/16), screen.get_height()*(15/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(15/16), screen.get_height()*(15/16)))]
-PLAYER2_HAND_RECT = [CARDBACK_SURF.get_rect(center = (screen.get_width()*(1/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(3/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(5/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(7/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(9/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(11/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(13/16), screen.get_height()*(1/16))), \
-                    CARDBACK_SURF.get_rect(center = (screen.get_width()*(15/16), screen.get_height()*(1/16)))]
+COLOR_CARD_SURF = OrderedDict([("red", RED_CARD_SURF), ("green", GREEN_CARD_SURF), ("blue", BLUE_CARD_SURF),\
+                    ("white", WHITE_CARD_SURF), ("yellow", YELLOW_CARD_SURF)])
+PLAYER1_HAND_RECT = []
+PLAYER2_HAND_RECT = []
+for i in range(8):
+    PLAYER1_HAND_RECT.append(CARDBACK_SURF.get_rect(center = (screen.get_width()*(((i*2)+1)/16), screen.get_height()*(15/16))))
+    PLAYER2_HAND_RECT.append(CARDBACK_SURF.get_rect(center = (screen.get_width()*(((i*2)+1)/16), screen.get_height()*(1/16))))
 DECK_RECT = CARDBACK_SURF.get_rect(midleft = (BOARD_RECT.right + 15, screen.get_height()/2))
-RED_BOARD_RECT = pygame.Rect(BOARD_RECT.left,BOARD_RECT.top,102,153)
+RED_BOARD_RECT = pygame.Rect(BOARD_RECT.left+4,BOARD_RECT.top,98,153)
 GREEN_BOARD_RECT = pygame.Rect(BOARD_RECT.left+102,BOARD_RECT.top,98,153)
 BLUE_BOARD_RECT = pygame.Rect(BOARD_RECT.left+200,BOARD_RECT.top,98,153)
 WHITE_BOARD_RECT = pygame.Rect(BOARD_RECT.left+298,BOARD_RECT.top,98,153)
-YELLOW_BOARD_RECT = pygame.Rect(BOARD_RECT.left+396,BOARD_RECT.top,102,153)
-PLAYER1_PILES_RECT = [pygame.Rect(RED_BOARD_RECT.left,RED_BOARD_RECT.bottom+30,\
-                    RED_BOARD_RECT.width,screen.get_height()*(15/16)-150-RED_BOARD_RECT.top), \
-                    pygame.Rect(GREEN_BOARD_RECT.left,GREEN_BOARD_RECT.bottom+30,\
-                    GREEN_BOARD_RECT.width,screen.get_height()*(15/16)-150-GREEN_BOARD_RECT.top), \
-                    pygame.Rect(BLUE_BOARD_RECT.left,BLUE_BOARD_RECT.bottom+30,\
-                    BLUE_BOARD_RECT.width,screen.get_height()*(15/16)-150-BLUE_BOARD_RECT.top), \
-                    pygame.Rect(WHITE_BOARD_RECT.left,WHITE_BOARD_RECT.bottom+30,\
-                    WHITE_BOARD_RECT.width,screen.get_height()*(15/16)-150-WHITE_BOARD_RECT.top), \
-                    pygame.Rect(YELLOW_BOARD_RECT.left,YELLOW_BOARD_RECT.bottom+30,\
-                    YELLOW_BOARD_RECT.width,screen.get_height()*(15/16)-150-YELLOW_BOARD_RECT.top)]
-PLAYER2_PILES_RECT = [pygame.Rect(RED_BOARD_RECT.left,screen.get_height()*(1/16)+150,\
-                    RED_BOARD_RECT.width,RED_BOARD_RECT.top-(screen.get_height()*(1/16)+180)), \
-                    pygame.Rect(GREEN_BOARD_RECT.left,screen.get_height()*(1/16)+150,\
-                    GREEN_BOARD_RECT.width,GREEN_BOARD_RECT.top-(screen.get_height()*(1/16)+180)), \
-                    pygame.Rect(BLUE_BOARD_RECT.left,screen.get_height()*(1/16)+150,\
-                    BLUE_BOARD_RECT.width,BLUE_BOARD_RECT.top-(screen.get_height()*(1/16)+180)), \
-                    pygame.Rect(WHITE_BOARD_RECT.left,screen.get_height()*(1/16)+150,\
-                    WHITE_BOARD_RECT.width,WHITE_BOARD_RECT.top-(screen.get_height()*(1/16)+180)), \
-                    pygame.Rect(WHITE_BOARD_RECT.left,screen.get_height()*(1/16)+150,\
-                    YELLOW_BOARD_RECT.width,YELLOW_BOARD_RECT.top-(screen.get_height()*(1/16)+180))]
+YELLOW_BOARD_RECT = pygame.Rect(BOARD_RECT.left+396,BOARD_RECT.top,98,153)
+COLOR_BOARD_RECT = OrderedDict([("red", RED_BOARD_RECT), ("green", GREEN_BOARD_RECT), ("blue", BLUE_BOARD_RECT),\
+                    ("white", WHITE_BOARD_RECT), ("yellow", YELLOW_BOARD_RECT)])
+PLAYER1_PILES_RECT = []
+PLAYER2_PILES_RECT = []
+for j in range(len(COLOR_BOARD_RECT)):
+    PLAYER1_PILES_RECT.append(pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,list(COLOR_BOARD_RECT.values())[j].bottom+30,\
+                    list(COLOR_BOARD_RECT.values())[j].width,screen.get_height()*(15/16)-150-list(COLOR_BOARD_RECT.values())[j].top))
+    PLAYER2_PILES_RECT.append(pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,screen.get_height()*(1/16)+150,\
+                    list(COLOR_BOARD_RECT.values())[j].width,list(COLOR_BOARD_RECT.values())[j].top-(screen.get_height()*(1/16)+180)))
 
-def draw_p1_piles(values2d):
+def draw_p_piles(values2d, p):
     for i in range(len(values2d[0])):
-        if values2d[0][i] != " ":
-            screen.blit(RED_CARD_SURF[int(values2d[0][i])-1],(PLAYER1_PILES_RECT[0].left+7,PLAYER1_PILES_RECT[0].top+(i*30)))
-        if values2d[1][i] != " ":
-            screen.blit(GREEN_CARD_SURF[int(values2d[1][i])-1],(PLAYER1_PILES_RECT[1].left+5,PLAYER1_PILES_RECT[1].top+(i*30)))
-        if values2d[2][i] != " ":
-            screen.blit(BLUE_CARD_SURF[int(values2d[2][i])-1],(PLAYER1_PILES_RECT[2].left+5,PLAYER1_PILES_RECT[2].top+(i*30)))
-        if values2d[3][i] != " ":
-            screen.blit(WHITE_CARD_SURF[int(values2d[3][i])-1],(PLAYER1_PILES_RECT[3].left+5,PLAYER1_PILES_RECT[3].top+(i*30)))
-        if values2d[4][i] != " ":
-            screen.blit(YELLOW_CARD_SURF[int(values2d[4][i])-1],(PLAYER1_PILES_RECT[4].left+5,PLAYER1_PILES_RECT[4].top+(i*30)))
-
-def draw_p2_piles(values2d):
-    for i in range(len(values2d[0])):
-        if values2d[0][i] != " ":
-            screen.blit(RED_CARD_SURF[int(values2d[0][i])-1],(PLAYER2_PILES_RECT[0].left+7,PLAYER2_PILES_RECT[0].bottom-CARDBACK_SURF.get_height()-(i*30)))
-        if values2d[1][i] != " ":
-            screen.blit(GREEN_CARD_SURF[int(values2d[1][i])-1],(PLAYER2_PILES_RECT[1].left+5,PLAYER2_PILES_RECT[1].bottom-CARDBACK_SURF.get_height()-(i*30)))
-        if values2d[2][i] != " ":
-            screen.blit(BLUE_CARD_SURF[int(values2d[2][i])-1],(PLAYER2_PILES_RECT[2].left+5,PLAYER2_PILES_RECT[2].bottom-CARDBACK_SURF.get_height()-(i*30)))
-        if values2d[3][i] != " ":
-            screen.blit(WHITE_CARD_SURF[int(values2d[3][i])-1],(PLAYER2_PILES_RECT[3].left+5,PLAYER2_PILES_RECT[3].bottom-CARDBACK_SURF.get_height()-(i*30)))
-        if values2d[4][i] != " ":
-            screen.blit(YELLOW_CARD_SURF[int(values2d[4][i])-1],(PLAYER2_PILES_RECT[4].left+5,PLAYER2_PILES_RECT[4].bottom-CARDBACK_SURF.get_height()-(i*30)))
+        for j in range(len(COLOR_CARD_SURF)):
+            if values2d[j][i] != " ":
+                if p == "p1":
+                    screen.blit(list(COLOR_CARD_SURF.values())[j][int(values2d[j][i])-1],\
+                            (PLAYER1_PILES_RECT[j].left+5,PLAYER1_PILES_RECT[j].top+(i*30)))
+                elif p == "p2":
+                    screen.blit(list(COLOR_CARD_SURF.values())[j][int(values2d[j][i])-1],\
+                            (PLAYER2_PILES_RECT[j].left+7,PLAYER2_PILES_RECT[j].bottom-CARDBACK_SURF.get_height()-(i*30)))
 
 def draw_p1_hand(values, colors):
     for i in range(len(values)):
-        screen.blit(CARD_SURF[colors[i]][values[i]-1],PLAYER1_HAND_RECT[i])
+        screen.blit(COLOR_CARD_SURF[colors[i]][values[i]-1],PLAYER1_HAND_RECT[i])
 
 def draw_p2_hand():
     for i in range(8):
         screen.blit(CARDBACK_SURF,PLAYER2_HAND_RECT[i])
 
 def draw_board(values):
-    #TODO: this is wrong
-    if values[0] > 0:
-        screen.blit(RED_CARD_SURF[values[0]-1],(RED_BOARD_RECT.left+7,RED_BOARD_RECT.top+10))
-        screen.blit(BLUE_CARD_SURF[values[1]-1],(BLUE_BOARD_RECT.left+5,BLUE_BOARD_RECT.top+10))
-        screen.blit(GREEN_CARD_SURF[values[2]-1],(GREEN_BOARD_RECT.left+5,GREEN_BOARD_RECT.top+10))
-        screen.blit(WHITE_CARD_SURF[values[3]-1],(WHITE_BOARD_RECT.left+5,WHITE_BOARD_RECT.top+10))
-        screen.blit(YELLOW_CARD_SURF[values[4]-1],(YELLOW_BOARD_RECT.left+5,YELLOW_BOARD_RECT.top+10))
+    for j in range(len(COLOR_CARD_SURF)):
+        if values[j] > 0:
+            screen.blit(list(COLOR_CARD_SURF.values())[j][values[j]-1],\
+                    (list(COLOR_BOARD_RECT.values())[j].left+5,list(COLOR_BOARD_RECT.values())[j].top+10))
 
 def draw_deck():
     screen.blit(CARDBACK_SURF,DECK_RECT)
@@ -464,15 +394,14 @@ def draw_game(game):
             board_values.append(game.piles["board"][pile].pile[-1].value)
 
     draw_p2_hand()
-    draw_p2_piles(p2_piles)
+    draw_p_piles(p2_piles, "p2")
     draw_board(board_values)
     draw_deck()
-    draw_p1_piles(p1_piles)
+    draw_p_piles(p1_piles, "p1")
     draw_p1_hand(p1_hand_values, p1_hand_colors)
 
 game = Game()
 game.print_game()
-screen.blit(BOARD_SURF,BOARD_RECT)
 
 while True:
     for event in pygame.event.get():
@@ -487,6 +416,7 @@ while True:
         else:
             player_turn(game, game.p2)
 
+        screen.blit(BOARD_SURF,BOARD_RECT)
         game.print_game()
         draw_game(game)
 
