@@ -17,7 +17,8 @@ class CardPile:
 
     def calculate_score(self):
         if not len(self.pile):
-            return
+            return 0
+        self.score = 0
         multiplier = 1
         for card in self.pile:
             if card.value == 1:
@@ -47,8 +48,10 @@ class Player:
         self.name = name
         self.hand = hand
         self.score = 0
+        self.is_draw_phase = False
 
     def calculate_score(self, piles):
+        self.score = 0
         for pile in piles:
             self.score += pile.calculate_score()
         return self.score
@@ -61,7 +64,7 @@ class Player:
 
     def play_card(self, card, pile):
         if (card in self.hand)\
-                and (pile.is_empty() or pile.pile[-1].value < card.value)\
+                and (pile.is_empty() or pile.pile[-1].value < card.value or 1 == pile.pile[-1].value == card.value)\
                 and (pile.color == card.color)\
                 and (self.name == pile.owner):
             pile.add_card(self.remove_card(self.hand.index(card)))
@@ -246,11 +249,19 @@ class Game:
         p1_hand_values = []
         p1_hand_colors = []
 
-        for i in range(len(self.p1.hand)):
-            p2_hand_values.append(str(self.p2.hand[i].value))
-            p2_hand_colors.append(COLORS[self.p2.hand[i].color])
-            p1_hand_values.append(str(self.p1.hand[i].value))
-            p1_hand_colors.append(COLORS[self.p1.hand[i].color])
+        for i in range(8):
+            if i < len(self.p2.hand):
+                p2_hand_values.append(str(self.p2.hand[i].value))
+                p2_hand_colors.append(COLORS[self.p2.hand[i].color])
+            else:
+                p2_hand_values.append(" ")
+                p2_hand_colors.append(WHITE)
+            if i < len(self.p1.hand):
+                p1_hand_values.append(str(self.p1.hand[i].value))
+                p1_hand_colors.append(COLORS[self.p1.hand[i].color])
+            else:
+                p1_hand_values.append(" ")
+                p1_hand_colors.append(WHITE)
 
         for pile in self.piles["board"]:
             if self.piles["board"][pile].is_empty():
@@ -276,6 +287,7 @@ def player_turn(game, p):
     else:
         if not p.play_multiplier_card(game.piles[p.name][color]):
             p.discard_multiplier_card(game.piles["board"][color])
+    p.is_draw_phase = True
     
     if bool(random.getrandbits(1)):
         for pile in game.piles["board"]:
@@ -286,6 +298,7 @@ def player_turn(game, p):
                     game.is_p1_turn = True
                 return
     p.draw_card_from_deck(game.deck)
+    p.is_draw_phase = False
     if game.is_p1_turn:        
         game.is_p1_turn = False
     else:
@@ -294,6 +307,7 @@ def player_turn(game, p):
 pygame.init()
 screen = pygame.display.set_mode((800,1200))
 screen.fill("green4")
+font = pygame.font.Font(None, 64)
 pygame.display.set_caption("Lost Cities")
 clock = pygame.time.Clock()
 
@@ -327,6 +341,8 @@ YELLOW_CARD_SURF = [pygame.image.load("images/yellow1.png"), pygame.image.load("
                     pygame.image.load("images/yellow9.png"), pygame.image.load("images/yellow10.png")]
 COLOR_CARD_SURF = OrderedDict([("red", RED_CARD_SURF), ("green", GREEN_CARD_SURF), ("blue", BLUE_CARD_SURF),\
                     ("white", WHITE_CARD_SURF), ("yellow", YELLOW_CARD_SURF)])
+BG_SURF = pygame.Surface((CARDBACK_SURF.get_size()))
+BG_SURF.fill("green4")
 PLAYER1_HAND_RECT = []
 PLAYER2_HAND_RECT = []
 for i in range(8):
@@ -344,7 +360,7 @@ PLAYER1_PILES_RECT = []
 PLAYER2_PILES_RECT = []
 for j in range(len(COLOR_BOARD_RECT)):
     PLAYER1_PILES_RECT.append(pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,list(COLOR_BOARD_RECT.values())[j].bottom+30,\
-                    list(COLOR_BOARD_RECT.values())[j].width,screen.get_height()*(15/16)-150-list(COLOR_BOARD_RECT.values())[j].top))
+                    list(COLOR_BOARD_RECT.values())[j].width,screen.get_height()*(15/16)-180-list(COLOR_BOARD_RECT.values())[j].bottom))
     PLAYER2_PILES_RECT.append(pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,screen.get_height()*(1/16)+150,\
                     list(COLOR_BOARD_RECT.values())[j].width,list(COLOR_BOARD_RECT.values())[j].top-(screen.get_height()*(1/16)+180)))
 
@@ -360,6 +376,7 @@ def draw_p_piles(values2d, p):
                             (PLAYER2_PILES_RECT[j].left+7,PLAYER2_PILES_RECT[j].bottom-CARDBACK_SURF.get_height()-(i*30)))
 
 def draw_p1_hand(values, colors):
+    screen.blit(BG_SURF,PLAYER1_HAND_RECT[7].topleft)
     for i in range(len(values)):
         screen.blit(COLOR_CARD_SURF[colors[i]][values[i]-1],PLAYER1_HAND_RECT[i])
 
@@ -373,8 +390,12 @@ def draw_board(values):
             screen.blit(list(COLOR_CARD_SURF.values())[j][values[j]-1],\
                     (list(COLOR_BOARD_RECT.values())[j].left+5,list(COLOR_BOARD_RECT.values())[j].top+10))
 
-def draw_deck():
+def draw_deck(deck_length):
     screen.blit(CARDBACK_SURF,DECK_RECT)
+    text = font.render(str(deck_length), True, "white")
+    textRect = text.get_rect()
+    textRect.center = DECK_RECT.center
+    screen.blit(text, textRect)
 
 def draw_game(game):
     p2_piles = game.create_2d_array_of_piles("p2")
@@ -396,32 +417,104 @@ def draw_game(game):
     draw_p2_hand()
     draw_p_piles(p2_piles, "p2")
     draw_board(board_values)
-    draw_deck()
+    draw_deck(len(game.deck))
     draw_p_piles(p1_piles, "p1")
     draw_p1_hand(p1_hand_values, p1_hand_colors)
+    if len(game.deck) <= 0:
+        game_over(game)
+
+def human_player_turn(game, card_to_play, pile_to_play):
+    if not game.p1.is_draw_phase:
+        if card_to_play is None or pile_to_play is None:
+            return card_to_play, pile_to_play
+        if pile_to_play.owner == "p1":
+            if not game.p1.play_card(card_to_play, pile_to_play):
+                return None, None
+        else:
+            if not game.p1.discard_card(card_to_play, pile_to_play):
+                return None, None
+        game.p1.is_draw_phase = True
+        return None, None
+    else:
+        if pile_to_play is None:
+            return card_to_play, pile_to_play
+        if pile_to_play == "deck":
+            game.p1.draw_card_from_deck(game.deck)
+        else:
+            if not game.p1.draw_card_from_pile(pile_to_play):
+                return None, None
+        game.p1.is_draw_phase = False
+        game.is_p1_turn = False
+        return None, None
+
+def get_clicked_card(mouse_pos, game, card_to_play):
+    if not game.p1.is_draw_phase:
+        if card_to_play is None:
+            for i in range(len(PLAYER1_HAND_RECT)):
+                if PLAYER1_HAND_RECT[i].collidepoint(mouse_pos):
+                    return game.p1.hand[i], None
+        else:
+            for i in range(len(PLAYER1_PILES_RECT)):
+                if PLAYER1_PILES_RECT[i].collidepoint(mouse_pos):
+                    return card_to_play, list(game.piles["p1"].values())[i]
+            for j in range(len(COLOR_BOARD_RECT)):
+                if list(COLOR_BOARD_RECT.values())[j].collidepoint(mouse_pos):
+                    return card_to_play, list(game.piles["board"].values())[j]
+    else:
+        for j in range(len(COLOR_BOARD_RECT)):
+            if list(COLOR_BOARD_RECT.values())[j].collidepoint(mouse_pos):
+                return card_to_play, list(game.piles["board"].values())[j]
+        if DECK_RECT.collidepoint(mouse_pos):
+            return card_to_play, "deck"
+    return None, None
+
+def game_over(game):
+    p1_score = game.p1.calculate_score(game.piles["p1"].values())
+    p2_score = game.p2.calculate_score(game.piles["p2"].values())
+    message = ""
+    if p1_score > p2_score:
+        message = "YOU WIN!"
+    elif p1_score < p2_score:
+        message = "P2 WINS"
+    else:
+        message = "TIE"
+    p1_text = font.render(str(p1_score), True, "white")
+    p2_text = font.render(str(p2_score), True, "white")
+    message_text = font.render(message, True, "white")
+    p1_text_rect = p1_text.get_rect()
+    p2_text_rect = p2_text.get_rect()
+    message_rect = message_text.get_rect()
+    p1_text_rect.center = PLAYER1_PILES_RECT[2].center
+    p2_text_rect.center = PLAYER2_PILES_RECT[2].center
+    message_rect.center = BOARD_RECT.center
+    screen.blit(p1_text, p1_text_rect)
+    screen.blit(p2_text, p2_text_rect)
+    screen.blit(message_text, message_rect)
 
 game = Game()
-game.print_game()
+is_human_player = False
+card_to_play = None
+pile_to_play = None
 
 while True:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
             exit()
+        if event.type == pygame.MOUSEBUTTONUP:
+            card_to_play, pile_to_play = get_clicked_card(event.pos, game, card_to_play)
 
-
-    while len(game.deck) > 0:
+    if len(game.deck) > 0:
         if game.is_p1_turn:
-            player_turn(game, game.p1)
+            if is_human_player:
+                card_to_play, pile_to_play = human_player_turn(game, card_to_play, pile_to_play)
+            else:
+                player_turn(game, game.p1)
         else:
             player_turn(game, game.p2)
+            
+    screen.blit(BOARD_SURF,BOARD_RECT)
+    draw_game(game)
 
-        screen.blit(BOARD_SURF,BOARD_RECT)
-        game.print_game()
-        draw_game(game)
-
-        pygame.display.update()
-        clock.tick(60)
-
-print("P1: " + str(game.p1.calculate_score(game.piles["p1"].values())))
-print("P2: " + str(game.p2.calculate_score(game.piles["p2"].values())))
+    pygame.display.update()
+    clock.tick(60)
