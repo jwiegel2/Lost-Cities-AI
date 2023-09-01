@@ -193,15 +193,12 @@ class Game:
             
     def create_2d_array_of_piles(self, p):
         p_piles = [[],[],[],[],[]]
-        longest = max([len(self.piles[p]["red"].pile),\
-                    len(self.piles[p]["green"].pile),\
-                    len(self.piles[p]["blue"].pile),\
-                    len(self.piles[p]["white"].pile),\
-                    len(self.piles[p]["yellow"].pile)])
+        pile_lengths = [len(self.piles[p][c].pile) for c in self.colors]
+        longest = max(pile_lengths)
         for i in range(longest):
-            for j in range(len(self.piles[p])):
-                if i < len(list(self.piles[p].values())[j].pile):
-                    p_piles[j].append(str(list(self.piles[p].values())[j].pile[i].value))
+            for j, color_pile in enumerate(list(self.piles[p].values())):
+                if i < len(color_pile.pile):
+                    p_piles[j].append(str(color_pile.pile[i].value))
                 else:
                     p_piles[j].append(" ")
         return p_piles
@@ -309,38 +306,38 @@ WHITE_BOARD_RECT = pygame.Rect(BOARD_RECT.left+298,BOARD_RECT.top,98,153)
 YELLOW_BOARD_RECT = pygame.Rect(BOARD_RECT.left+396,BOARD_RECT.top,98,153)
 COLOR_BOARD_RECT = OrderedDict([("red", RED_BOARD_RECT), ("green", GREEN_BOARD_RECT), ("blue", BLUE_BOARD_RECT),\
                     ("white", WHITE_BOARD_RECT), ("yellow", YELLOW_BOARD_RECT)])
-PLAYER1_PILES_RECT = [pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,list(COLOR_BOARD_RECT.values())[j].bottom+30,\
-                    list(COLOR_BOARD_RECT.values())[j].width,screen.get_height()*(15/16)-180-list(COLOR_BOARD_RECT.values())[j].bottom)\
-                    for j in range(len(COLOR_BOARD_RECT))]
-PLAYER2_PILES_RECT = [pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,screen.get_height()*(1/16)+150,\
-                    list(COLOR_BOARD_RECT.values())[j].width,list(COLOR_BOARD_RECT.values())[j].top-(screen.get_height()*(1/16)+180))\
-                    for j in range(len(COLOR_BOARD_RECT))]
+PLAYER1_PILES_RECT = [pygame.Rect(c_board_rect.left,c_board_rect.bottom+30,\
+                    c_board_rect.width,screen.get_height()*(15/16)-180-c_board_rect.bottom)\
+                    for c_board_rect in list(COLOR_BOARD_RECT.values())]
+PLAYER2_PILES_RECT = [pygame.Rect(c_board_rect.left,screen.get_height()*(1/16)+150,\
+                    c_board_rect.width,c_board_rect.top-(screen.get_height()*(1/16)+180))\
+                    for c_board_rect in list(COLOR_BOARD_RECT.values())]
 
 def draw_p_piles(values2d, p):
-    for i in range(len(values2d[0])):
-        for j in range(len(COLOR_CARD_SURF)):
+    for i in range(len(list(zip(*values2d)))):
+        for j, c_card_surf in enumerate(list(COLOR_CARD_SURF.values())):
             if values2d[j][i] != " ":
                 if p == "p1":
-                    screen.blit(list(COLOR_CARD_SURF.values())[j][int(values2d[j][i])-1],\
+                    screen.blit(c_card_surf[int(values2d[j][i])-1],\
                             (PLAYER1_PILES_RECT[j].left+5,PLAYER1_PILES_RECT[j].top+(i*30)))
                 elif p == "p2":
-                    screen.blit(list(COLOR_CARD_SURF.values())[j][int(values2d[j][i])-1],\
-                            (PLAYER2_PILES_RECT[j].left+7,PLAYER2_PILES_RECT[j].bottom-CARDBACK_SURF.get_height()-(i*30)))
+                    screen.blit(c_card_surf[int(values2d[j][i])-1],\
+                            (PLAYER2_PILES_RECT[j].left+5,PLAYER2_PILES_RECT[j].bottom-CARDBACK_SURF.get_height()-(i*30)))
 
 def draw_p1_hand(values, colors):
     screen.blit(BG_SURF,PLAYER1_HAND_RECT[7].topleft)
-    for i in range(len(values)):
-        screen.blit(COLOR_CARD_SURF[colors[i]][values[i]-1],PLAYER1_HAND_RECT[i])
+    for i, (value, color) in enumerate(zip(values, colors)):
+        screen.blit(COLOR_CARD_SURF[color][value-1],PLAYER1_HAND_RECT[i])
 
 def draw_p2_hand():
     for i in range(8):
         screen.blit(CARDBACK_SURF,PLAYER2_HAND_RECT[i])
 
 def draw_board(values):
-    for j in range(len(COLOR_CARD_SURF)):
+    for j, (c_card_surf, c_board_rect) in enumerate(zip(list(COLOR_CARD_SURF.values()), list(COLOR_BOARD_RECT.values()))):
         if values[j] > 0:
-            screen.blit(list(COLOR_CARD_SURF.values())[j][values[j]-1],\
-                    (list(COLOR_BOARD_RECT.values())[j].left+5,list(COLOR_BOARD_RECT.values())[j].top+10))
+            screen.blit(c_card_surf[values[j]-1],\
+                    (c_board_rect.left+5,c_board_rect.top+10))
 
 def draw_deck(deck_length):
     screen.blit(CARDBACK_SURF,DECK_RECT)
@@ -353,8 +350,8 @@ def draw_game(game):
     p2_piles = game.create_2d_array_of_piles("p2")
     board_values = [game.piles["board"][pile].pile[-1].value if not game.piles["board"][pile].is_empty() else 0 for pile in game.piles["board"]]
     p1_piles = game.create_2d_array_of_piles("p1")
-    p1_hand_values = [game.p1.hand[i].value for i in range(len(game.p1.hand))]
-    p1_hand_colors = [game.p1.hand[i].color for i in range(len(game.p1.hand))]
+    p1_hand_values = [card.value for card in game.p1.hand]
+    p1_hand_colors = [card.color for card in game.p1.hand]
 
     draw_p2_hand()
     draw_p_piles(p2_piles, "p2")
@@ -371,10 +368,10 @@ def human_player_turn(game, card_to_play, pile_to_play):
             return card_to_play, pile_to_play
         if pile_to_play.owner == "p1":
             if not game.p1.play_card(card_to_play, pile_to_play):
-                return None, None
+                return card_to_play, None
         else:
             if not game.p1.discard_card(card_to_play, pile_to_play):
-                return None, None
+                return card_to_play, None
         game.p1.is_draw_phase = True
         return None, None
     else:
@@ -391,24 +388,23 @@ def human_player_turn(game, card_to_play, pile_to_play):
 
 def get_clicked_card(mouse_pos, game, card_to_play):
     if not game.p1.is_draw_phase:
-        if card_to_play is None:
-            for i in range(len(PLAYER1_HAND_RECT)):
-                if PLAYER1_HAND_RECT[i].collidepoint(mouse_pos):
-                    return game.p1.hand[i], None
-        else:
-            for i in range(len(PLAYER1_PILES_RECT)):
-                if PLAYER1_PILES_RECT[i].collidepoint(mouse_pos):
+        for i, p1_hand_rect in enumerate(PLAYER1_HAND_RECT):
+            if p1_hand_rect.collidepoint(mouse_pos):
+                return game.p1.hand[i], None
+        if card_to_play is not None:
+            for i, p1_piles_rect in enumerate(PLAYER1_PILES_RECT):
+                if p1_piles_rect.collidepoint(mouse_pos):
                     return card_to_play, list(game.piles["p1"].values())[i]
-            for j in range(len(COLOR_BOARD_RECT)):
-                if list(COLOR_BOARD_RECT.values())[j].collidepoint(mouse_pos):
+            for j, c_board_rect in enumerate(list(COLOR_BOARD_RECT.values())):
+                if c_board_rect.collidepoint(mouse_pos):
                     return card_to_play, list(game.piles["board"].values())[j]
     else:
-        for j in range(len(COLOR_BOARD_RECT)):
-            if list(COLOR_BOARD_RECT.values())[j].collidepoint(mouse_pos):
+        for j, c_board_rect in enumerate(list(COLOR_BOARD_RECT.values())):
+            if c_board_rect.collidepoint(mouse_pos):
                 return card_to_play, list(game.piles["board"].values())[j]
         if DECK_RECT.collidepoint(mouse_pos):
             return card_to_play, "deck"
-    return None, None
+    return card_to_play, None
 
 def game_over(game):
     p1_score = game.p1.calculate_score(game.piles["p1"].values())
@@ -434,7 +430,7 @@ def game_over(game):
     screen.blit(message_text, message_rect)
 
 game = Game()
-is_human_player = False
+is_human_player = True
 card_to_play = None
 pile_to_play = None
 
