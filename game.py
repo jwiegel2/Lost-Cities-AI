@@ -97,7 +97,7 @@ class Player:
             if card.color == pile.color and card.value > 1:
                 card_list.append(card)
                 card_value_list.append(card.value)
-        if len(card_list):
+        if card_list:
             if is_play and is_lowest:
                 return self.play_card(card_list[card_value_list.index(min(card_value_list))], pile)
             elif is_play and not is_lowest:
@@ -224,10 +224,10 @@ class Game:
         p1_hand_colors = [COLORS[self.p1.hand[i].color] if i < len(self.p1.hand) else WHITE for i in range(8)]
 
         self.print_hand(p2_hand_values, p2_hand_colors)
-        if len(p2_piles):
+        if p2_piles:
             self.print_piles(p2_piles)
         self.print_board(board)
-        if len(p1_piles):
+        if p1_piles:
             self.print_piles(p1_piles)
         self.print_hand(p1_hand_values, p1_hand_colors)
         print("")
@@ -362,7 +362,7 @@ def draw_game(game):
     draw_deck(len(game.deck))
     draw_p_piles(p1_piles, "p1")
     draw_p1_hand(p1_hand_values, p1_hand_colors)
-    if len(game.deck) <= 0:
+    if not game.deck:
         game_over(game)
 
 def human_player_turn(game, card_to_play, pile_to_play):
@@ -446,7 +446,7 @@ while True:
         if event.type == pygame.MOUSEBUTTONUP:
             card_to_play, pile_to_play = get_clicked_card(event.pos, game, card_to_play)
 
-    if len(game.deck) > 0:
+    if game.deck:
         if game.is_p1_turn:
             if is_human_player:
                 card_to_play, pile_to_play = human_player_turn(game, card_to_play, pile_to_play)
