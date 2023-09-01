@@ -140,7 +140,6 @@ class Player:
 
 class Game:
     def __init__(self):
-        # Band-aid solution, need to enumerate colors
         self.colors = ["red", "green", "blue", "white", "yellow"]
         self.init_deck()
         self.init_players()
@@ -165,34 +164,24 @@ class Game:
         self.piles["p1"] = OrderedDict([(c, CardPile(c, "p1")) for c in self.colors])
         self.piles["p2"] = OrderedDict([(c, CardPile(c, "p2")) for c in self.colors])
 
-    def print_hand(self, values, colors):
-        print("\n[" + colors[0] + values[0] + ", "\
-                    + colors[1] + values[1] + ", "\
-                    + colors[2] + values[2] + ", "\
-                    + colors[3] + values[3] + ", "\
-                    + colors[4] + values[4] + ", "\
-                    + colors[5] + values[5] + ", "\
-                    + colors[6] + values[6] + ", "\
-                    + colors[7] + values[7] + "\033[37m]\n")
+    def print_hand(self, values, colors, color_map):
+        color_value_pairs = ["".join(map(str, i)) for i in zip(colors, values)]
+        print("\n[" + ", ".join(color_value_pairs) + color_map["white"] + "]\n")
         
-    def print_board(self, values):
-        print("\n[\033[31m" + values[0] + ", " +\
-                "\033[32m" + values[1] + ", " +\
-                "\033[34m" + values[2] + ", " +\
-                "\033[37m" + values[3] + ", " +\
-                "\033[33m" + values[4] + "\033[37m]      [" + \
-                str(len(self.deck)) + "]\n")
+    def print_board(self, values, color_map):
+        color_value_pairs = ["".join(map(str, i)) for i in zip(list(color_map.values()), values)]
+        print("\n[" + ", ".join(color_value_pairs) + color_map["white"] + \
+                "]      [" + str(len(self.deck)) + "]\n")
         
-    def print_piles(self, values2d):
-        for i in range(len(values2d[0])):
-            print("[\033[31m" + values2d[0][i] + ", " +\
-                    "\033[32m" + values2d[1][i] + ", " +\
-                    "\033[34m" + values2d[2][i] + ", " +\
-                    "\033[37m" + values2d[3][i] + ", " +\
-                    "\033[33m" + values2d[4][i] + "\033[37m]")
+    def print_piles(self, values2d, color_map):
+        color_value_pairs = [[] for _ in range(len(list(zip(*values2d))))]
+        for i in range(len(list(zip(*values2d)))):
+            for j, color in enumerate(list(color_map.values())):
+                color_value_pairs[i].append("".join(map(str, (color, values2d[j][i]))))
+            print("[" + ", ".join(color_value_pairs[i]) + color_map["white"] + "]")
             
     def create_2d_array_of_piles(self, p):
-        p_piles = [[],[],[],[],[]]
+        p_piles = [[] for _ in self.colors]
         pile_lengths = [len(self.piles[p][c].pile) for c in self.colors]
         longest = max(pile_lengths)
         for i in range(longest):
@@ -209,24 +198,24 @@ class Game:
         YELLOW = "\033[33m"
         BLUE = "\033[34m"
         WHITE = "\033[37m"
-        COLORS = OrderedDict([("red", RED), ("green", GREEN), ("blue", BLUE), \
+        COLOR_MAP = OrderedDict([("red", RED), ("green", GREEN), ("blue", BLUE), \
                               ("white", WHITE), ("yellow", YELLOW)])
 
         p2_hand_values = [str(self.p2.hand[i].value) if i < len(self.p2.hand) else (" ") for i in range(8)]
-        p2_hand_colors = [COLORS[self.p2.hand[i].color] if i < len(self.p2.hand) else WHITE for i in range(8)]
+        p2_hand_colors = [COLOR_MAP[self.p2.hand[i].color] if i < len(self.p2.hand) else WHITE for i in range(8)]
         p2_piles = self.create_2d_array_of_piles("p2")
         board = [str(self.piles["board"][pile].pile[-1].value) if not self.piles["board"][pile].is_empty() else "x" for pile in self.piles["board"]]
         p1_piles = self.create_2d_array_of_piles("p1")
         p1_hand_values = [str(self.p1.hand[i].value) if i < len(self.p1.hand) else " " for i in range(8)]
-        p1_hand_colors = [COLORS[self.p1.hand[i].color] if i < len(self.p1.hand) else WHITE for i in range(8)]
+        p1_hand_colors = [COLOR_MAP[self.p1.hand[i].color] if i < len(self.p1.hand) else WHITE for i in range(8)]
 
-        self.print_hand(p2_hand_values, p2_hand_colors)
+        self.print_hand(p2_hand_values, p2_hand_colors, COLOR_MAP)
         if p2_piles:
-            self.print_piles(p2_piles)
-        self.print_board(board)
+            self.print_piles(p2_piles, COLOR_MAP)
+        self.print_board(board, COLOR_MAP)
         if p1_piles:
-            self.print_piles(p1_piles)
-        self.print_hand(p1_hand_values, p1_hand_colors)
+            self.print_piles(p1_piles, COLOR_MAP)
+        self.print_hand(p1_hand_values, p1_hand_colors, COLOR_MAP)
         print("")
 
 def player_turn(game, p):
@@ -336,8 +325,7 @@ def draw_p2_hand():
 def draw_board(values):
     for j, (c_card_surf, c_board_rect) in enumerate(zip(list(COLOR_CARD_SURF.values()), list(COLOR_BOARD_RECT.values()))):
         if values[j] > 0:
-            screen.blit(c_card_surf[values[j]-1],\
-                    (c_board_rect.left+5,c_board_rect.top+10))
+            screen.blit(c_card_surf[values[j]-1],(c_board_rect.left+5,c_board_rect.top+10))
 
 def draw_deck(deck_length):
     screen.blit(CARDBACK_SURF,DECK_RECT)
@@ -430,7 +418,7 @@ def game_over(game):
     screen.blit(message_text, message_rect)
 
 game = Game()
-is_human_player = True
+is_human_player = False
 card_to_play = None
 pile_to_play = None
 
