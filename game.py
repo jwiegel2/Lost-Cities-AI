@@ -140,56 +140,30 @@ class Player:
 
 class Game:
     def __init__(self):
+        # Band-aid solution, need to enumerate colors
+        self.colors = ["red", "green", "blue", "white", "yellow"]
         self.init_deck()
         self.init_players()
         self.init_piles()
 
     def init_deck(self):
-        self.deck = []
-        for i in range(2,11):
-            self.deck.append(Card("red", i))
-            self.deck.append(Card("green", i))
-            self.deck.append(Card("blue", i))
-            self.deck.append(Card("white", i))
-            self.deck.append(Card("yellow", i))
-        for _ in range(3):
-            self.deck.append(Card("red", 1))
-            self.deck.append(Card("green", 1))
-            self.deck.append(Card("blue", 1))
-            self.deck.append(Card("white", 1))
-            self.deck.append(Card("yellow", 1))
+        self.deck = [Card(c, i) for c in self.colors for i in range(2,11)]
+        multipliers = [Card(c, 1) for c in self.colors for _ in range(3)]
+        self.deck.extend(multipliers)
         random.Random(1).shuffle(self.deck)
 
     def init_players(self):
-        p1_hand = []
-        p2_hand = []
-        for _ in range(8):
-            p1_hand.append(self.deck.pop())
-            p2_hand.append(self.deck.pop())
+        p1_hand = [self.deck.pop() for _ in range(8)]
+        p2_hand = [self.deck.pop() for _ in range(8)]
         self.p1 = Player("p1", p1_hand)
         self.p2 = Player("p2", p2_hand)
         self.is_p1_turn = True
 
     def init_piles(self):
         self.piles = {}
-        self.piles["board"] = OrderedDict()
-        self.piles["board"]["red"] = CardPile("red", "board")
-        self.piles["board"]["green"] = CardPile("green", "board")
-        self.piles["board"]["blue"] = CardPile("blue", "board")
-        self.piles["board"]["white"] = CardPile("white", "board")
-        self.piles["board"]["yellow"] = CardPile("yellow", "board")
-        self.piles["p1"] = OrderedDict()
-        self.piles["p1"]["red"] = CardPile("red", "p1")
-        self.piles["p1"]["green"] = CardPile("green", "p1")
-        self.piles["p1"]["blue"] = CardPile("blue", "p1")
-        self.piles["p1"]["white"] = CardPile("white", "p1")
-        self.piles["p1"]["yellow"] = CardPile("yellow", "p1")
-        self.piles["p2"] = OrderedDict()
-        self.piles["p2"]["red"] = CardPile("red", "p2")
-        self.piles["p2"]["green"] = CardPile("green", "p2")
-        self.piles["p2"]["blue"] = CardPile("blue", "p2")
-        self.piles["p2"]["white"] = CardPile("white", "p2")
-        self.piles["p2"]["yellow"] = CardPile("yellow", "p2")
+        self.piles["board"] = OrderedDict([(c, CardPile(c, "board")) for c in self.colors])
+        self.piles["p1"] = OrderedDict([(c, CardPile(c, "p1")) for c in self.colors])
+        self.piles["p2"] = OrderedDict([(c, CardPile(c, "p2")) for c in self.colors])
 
     def print_hand(self, values, colors):
         print("\n[" + colors[0] + values[0] + ", "\
@@ -241,33 +215,13 @@ class Game:
         COLORS = OrderedDict([("red", RED), ("green", GREEN), ("blue", BLUE), \
                               ("white", WHITE), ("yellow", YELLOW)])
 
-        p2_hand_values = []
-        p2_hand_colors = []
+        p2_hand_values = [str(self.p2.hand[i].value) if i < len(self.p2.hand) else (" ") for i in range(8)]
+        p2_hand_colors = [COLORS[self.p2.hand[i].color] if i < len(self.p2.hand) else WHITE for i in range(8)]
         p2_piles = self.create_2d_array_of_piles("p2")
-        board = []
+        board = [str(self.piles["board"][pile].pile[-1].value) if not self.piles["board"][pile].is_empty() else "x" for pile in self.piles["board"]]
         p1_piles = self.create_2d_array_of_piles("p1")
-        p1_hand_values = []
-        p1_hand_colors = []
-
-        for i in range(8):
-            if i < len(self.p2.hand):
-                p2_hand_values.append(str(self.p2.hand[i].value))
-                p2_hand_colors.append(COLORS[self.p2.hand[i].color])
-            else:
-                p2_hand_values.append(" ")
-                p2_hand_colors.append(WHITE)
-            if i < len(self.p1.hand):
-                p1_hand_values.append(str(self.p1.hand[i].value))
-                p1_hand_colors.append(COLORS[self.p1.hand[i].color])
-            else:
-                p1_hand_values.append(" ")
-                p1_hand_colors.append(WHITE)
-
-        for pile in self.piles["board"]:
-            if self.piles["board"][pile].is_empty():
-                board.append("x")
-            else:
-                board.append(str(self.piles["board"][pile].pile[-1].value))
+        p1_hand_values = [str(self.p1.hand[i].value) if i < len(self.p1.hand) else " " for i in range(8)]
+        p1_hand_colors = [COLORS[self.p1.hand[i].color] if i < len(self.p1.hand) else WHITE for i in range(8)]
 
         self.print_hand(p2_hand_values, p2_hand_colors)
         if len(p2_piles):
@@ -343,11 +297,10 @@ COLOR_CARD_SURF = OrderedDict([("red", RED_CARD_SURF), ("green", GREEN_CARD_SURF
                     ("white", WHITE_CARD_SURF), ("yellow", YELLOW_CARD_SURF)])
 BG_SURF = pygame.Surface((CARDBACK_SURF.get_size()))
 BG_SURF.fill("green4")
-PLAYER1_HAND_RECT = []
-PLAYER2_HAND_RECT = []
-for i in range(8):
-    PLAYER1_HAND_RECT.append(CARDBACK_SURF.get_rect(center = (screen.get_width()*(((i*2)+1)/16), screen.get_height()*(15/16))))
-    PLAYER2_HAND_RECT.append(CARDBACK_SURF.get_rect(center = (screen.get_width()*(((i*2)+1)/16), screen.get_height()*(1/16))))
+PLAYER1_HAND_RECT = [CARDBACK_SURF.get_rect(center = (screen.get_width()*(((i*2)+1)/16), screen.get_height()*(15/16)))\
+                    for i in range(8)]
+PLAYER2_HAND_RECT = [CARDBACK_SURF.get_rect(center = (screen.get_width()*(((i*2)+1)/16), screen.get_height()*(1/16)))\
+                    for i in range(8)]
 DECK_RECT = CARDBACK_SURF.get_rect(midleft = (BOARD_RECT.right + 15, screen.get_height()/2))
 RED_BOARD_RECT = pygame.Rect(BOARD_RECT.left+4,BOARD_RECT.top,98,153)
 GREEN_BOARD_RECT = pygame.Rect(BOARD_RECT.left+102,BOARD_RECT.top,98,153)
@@ -356,13 +309,12 @@ WHITE_BOARD_RECT = pygame.Rect(BOARD_RECT.left+298,BOARD_RECT.top,98,153)
 YELLOW_BOARD_RECT = pygame.Rect(BOARD_RECT.left+396,BOARD_RECT.top,98,153)
 COLOR_BOARD_RECT = OrderedDict([("red", RED_BOARD_RECT), ("green", GREEN_BOARD_RECT), ("blue", BLUE_BOARD_RECT),\
                     ("white", WHITE_BOARD_RECT), ("yellow", YELLOW_BOARD_RECT)])
-PLAYER1_PILES_RECT = []
-PLAYER2_PILES_RECT = []
-for j in range(len(COLOR_BOARD_RECT)):
-    PLAYER1_PILES_RECT.append(pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,list(COLOR_BOARD_RECT.values())[j].bottom+30,\
-                    list(COLOR_BOARD_RECT.values())[j].width,screen.get_height()*(15/16)-180-list(COLOR_BOARD_RECT.values())[j].bottom))
-    PLAYER2_PILES_RECT.append(pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,screen.get_height()*(1/16)+150,\
-                    list(COLOR_BOARD_RECT.values())[j].width,list(COLOR_BOARD_RECT.values())[j].top-(screen.get_height()*(1/16)+180)))
+PLAYER1_PILES_RECT = [pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,list(COLOR_BOARD_RECT.values())[j].bottom+30,\
+                    list(COLOR_BOARD_RECT.values())[j].width,screen.get_height()*(15/16)-180-list(COLOR_BOARD_RECT.values())[j].bottom)\
+                    for j in range(len(COLOR_BOARD_RECT))]
+PLAYER2_PILES_RECT = [pygame.Rect(list(COLOR_BOARD_RECT.values())[j].left,screen.get_height()*(1/16)+150,\
+                    list(COLOR_BOARD_RECT.values())[j].width,list(COLOR_BOARD_RECT.values())[j].top-(screen.get_height()*(1/16)+180))\
+                    for j in range(len(COLOR_BOARD_RECT))]
 
 def draw_p_piles(values2d, p):
     for i in range(len(values2d[0])):
@@ -399,20 +351,10 @@ def draw_deck(deck_length):
 
 def draw_game(game):
     p2_piles = game.create_2d_array_of_piles("p2")
-    board_values = []
+    board_values = [game.piles["board"][pile].pile[-1].value if not game.piles["board"][pile].is_empty() else 0 for pile in game.piles["board"]]
     p1_piles = game.create_2d_array_of_piles("p1")
-    p1_hand_values = []
-    p1_hand_colors = []
-
-    for i in range(len(game.p1.hand)):
-        p1_hand_values.append(game.p1.hand[i].value)
-        p1_hand_colors.append(game.p1.hand[i].color)
-
-    for pile in game.piles["board"]:
-        if game.piles["board"][pile].is_empty():
-            board_values.append(0)
-        else:
-            board_values.append(game.piles["board"][pile].pile[-1].value)
+    p1_hand_values = [game.p1.hand[i].value for i in range(len(game.p1.hand))]
+    p1_hand_colors = [game.p1.hand[i].color for i in range(len(game.p1.hand))]
 
     draw_p2_hand()
     draw_p_piles(p2_piles, "p2")
