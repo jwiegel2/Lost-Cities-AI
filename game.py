@@ -41,10 +41,10 @@ class Game:
         
     def print_piles(self, values2d, color_map):
         color_value_pairs = [[] for _ in range(len(list(zip(*values2d))))]
-        for i in range(len(list(zip(*values2d)))):
+        for i, color_value_pair in enumerate(color_value_pairs):
             for j, color in enumerate(list(color_map.values())):
-                color_value_pairs[i].append("".join(map(str, (color, values2d[j][i]))))
-            print("[" + ", ".join(color_value_pairs[i]) + color_map["white"] + "]")
+                color_value_pair.append("".join(map(str, (color, values2d[j][i]))))
+            print("[" + ", ".join(color_value_pair) + color_map["white"] + "]")
             
     def create_2d_array_of_piles(self, p):
         p_piles = [[] for _ in self.colors]
@@ -133,3 +133,50 @@ class Game:
             self.p1.is_draw_phase = False
             self.is_p1_turn = False
             return None, None
+
+    def update_state(self):
+        state = []
+        # Player hand
+        # (Color, Number) (Color, Number) ... 8 cards = 16 entries
+        #  1    , 2        5    , 10
+        hand_card_colors = [card.color for card in self.p1.hand]
+        hand_card_values = [card.value for card in self.p1.hand]
+        for i in range(8):
+            if i < len(list(zip(hand_card_colors, hand_card_values))):
+                state.extend([self.colors.index(hand_card_colors[i]) + 1, hand_card_values[i]])
+            else:
+                state.extend([0, 0])
+        # Opponent piles
+        # (Multiplier, 2, 3, 4, 5, ...) 10 values for 5 piles = 50 entries
+        #  3         , 0, 1, 0, 1, ...
+        for pile in self.piles["p2"]:
+            multiplier = 1
+            is_card_value = [0] * 9
+            for card in self.piles["p2"][pile].pile:
+                if card.value == 1:
+                    multiplier += 1
+                else:
+                    is_card_value[card.value - 2] += 1
+            state.append(multiplier)
+            state.extend(is_card_value)
+        # Board piles
+        # (Top card of pile) 1 value for 5 piles = 5 entries
+        board_values = [self.piles["board"][pile].pile[-1].value if not self.piles["board"][pile].is_empty() else 0 for pile in self.piles["board"]]
+        state.extend(board_values)
+        # Player piles
+        # Same as opponent piles = 50 entries
+        for pile in self.piles["p1"]:
+            multiplier = 1
+            is_card_value = [0] * 9
+            for card in self.piles["p1"][pile].pile:
+                if card.value == 1:
+                    multiplier += 1
+                else:
+                    is_card_value[card.value - 2] += 1
+            state.append(multiplier)
+            state.extend(is_card_value)
+        # Deck
+        # Number of cards remaining <= 10
+        cards_remaining = min(len(self.deck), 10)
+        state.append(cards_remaining)
+        return state
